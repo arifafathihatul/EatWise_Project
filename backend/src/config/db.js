@@ -1,26 +1,24 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
 
-// Memastikan variabel di file .env bisa terbaca
 dotenv.config();
 
 const { Pool } = pg;
 
-// Membuat koneksi database menggunakan Pool
+// GUNAKAN connectionString, JANGAN pecah menjadi host/user/password
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 5432, 
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // WAJIB untuk Supabase agar koneksi tidak ditolak
+  }
 });
 
-// Tes koneksi saat aplikasi pertama kali berjalan
+// Tes koneksi
 pool.connect((err, client, release) => {
   if (err) {
-    return console.error('❌ Gagal terhubung ke database PostgreSQL:', err.stack);
+    return console.error('❌ Gagal terhubung ke database PostgreSQL:', err.message);
   }
-  console.log('⚡ Sukses terhubung ke database PostgreSQL menggunakan Pool!');
+  console.log('⚡ Sukses terhubung ke database PostgreSQL!');
   release();
 });
 
