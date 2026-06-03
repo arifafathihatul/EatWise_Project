@@ -88,7 +88,7 @@ st.markdown("""
 # ──────────────────────────────────────────────
 # DATA GENERATION  (meniru logika notebook)
 # ──────────────────────────────────────────────
-@st.cache_data
+#@st.cache_data
 def load_data():
     # Coba baca file CSV yang dihasilkan notebook; jika tidak ada, buat dummy
     try:
