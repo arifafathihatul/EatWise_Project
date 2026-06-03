@@ -6,6 +6,7 @@ Capstone Project | Streamlit Interactive Dashboard
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -88,40 +89,51 @@ st.markdown("""
 # ──────────────────────────────────────────────
 # DATA GENERATION  (meniru logika notebook)
 # ──────────────────────────────────────────────
-#@st.cache_data
+# @st.cache_data
 def load_data():
-    # Coba baca file CSV yang dihasilkan notebook; jika tidak ada, buat dummy
-    try:
-        df = pd.read_csv('eatwise_final_dataset.csv')
-    except FileNotFoundError:
-        try:
-            df = pd.read_csv('nutrition.csv', sep=';')
-        except FileNotFoundError:
-            # ── Fallback: dataset representatif ───────────────────────
-            np.random.seed(42)
-            n = 120
-            names_base = [
-                "Nasi Putih","Ayam Bakar","Tempe Goreng","Tahu Goreng","Sayur Lodeh",
-                "Gado-Gado","Soto Ayam","Bakso Sapi","Mie Goreng","Nasi Uduk",
-                "Pecel Lele","Rendang Sapi","Ikan Bakar","Cap Cay","Tumis Kangkung",
-                "Bubur Ayam","Ketoprak","Siomay","Batagor","Martabak Telur",
-                "Pisang Goreng","Onde-Onde","Klepon","Lupis","Risol",
-                "Air Mineral","Teh Manis","Jus Jeruk","Es Kelapa","Kopi Susu",
-                "Salad Buah","Yoghurt","Roti Gandum","Oatmeal","Granola",
-            ]
-            food_names = names_base * (n // len(names_base) + 1)
-            food_names = [f"{n} #{i+1}" if i >= len(names_base) else n
-                          for i, n in enumerate(food_names[:n])]
+    # Mendapatkan path absolut folder tempat dashboard.py berada
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    
+    # Path ke file dataset
+    path_csv = os.path.join(base_path, 'eatwise_final_dataset.csv')
+    path_nutrition = os.path.join(base_path, 'nutrition.csv')
 
-            df = pd.DataFrame({
-                'id': range(1, n+1),
-                'name': food_names,
-                'calories':     np.random.randint(30, 750, n).astype(float),
-                'proteins':     np.random.uniform(0.5, 40, n).round(1),
-                'fat':          np.random.uniform(0, 40, n).round(1),
-                'carbohydrate': np.random.uniform(0, 110, n).round(1),
-            })
+    # 1. Coba baca file utama
+    if os.path.exists(path_csv):
+        return pd.read_csv(path_csv)
+    
+    # 2. Coba baca file alternatif
+    elif os.path.exists(path_nutrition):
+        return pd.read_csv(path_nutrition, sep=';')
+    
+    # 3. Jika keduanya gagal, gunakan data representatif
+    else:
+        st.warning("Dataset tidak ditemukan. Menggunakan data representatif untuk demo.")
+        
+        np.random.seed(42)
+        n = 120
+        names_base = [
+            "Nasi Putih","Ayam Bakar","Tempe Goreng","Tahu Goreng","Sayur Lodeh",
+            "Gado-Gado","Soto Ayam","Bakso Sapi","Mie Goreng","Nasi Uduk",
+            "Pecel Lele","Rendang Sapi","Ikan Bakar","Cap Cay","Tumis Kangkung",
+            "Bubur Ayam","Ketoprak","Siomay","Batagor","Martabak Telur",
+            "Pisang Goreng","Onde-Onde","Klepon","Lupis","Risol",
+            "Air Mineral","Teh Manis","Jus Jeruk","Es Kelapa","Kopi Susu",
+            "Salad Buah","Yoghurt","Roti Gandum","Oatmeal","Granola",
+        ]
+        food_names = names_base * (n // len(names_base) + 1)
+        food_names = [f"{n} #{i+1}" if i >= len(names_base) else n
+                      for i, n in enumerate(food_names[:n])]
 
+        df = pd.DataFrame({
+            'id': range(1, n+1),
+            'name': food_names,
+            'calories':     np.random.randint(30, 750, n).astype(float),
+            'proteins':     np.random.uniform(0.5, 40, n).round(1),
+            'fat':          np.random.uniform(0, 40, n).round(1),
+            'carbohydrate': np.random.uniform(0, 110, n).round(1),
+        })
+        return df
     # ── Tambah makanan lokal ──────────────────────────────────────────
     makanan_lokal = pd.DataFrame([
         {'id':2001,'name':'Ayam Geprek',        'calories':550,'proteins':25.0,'fat':30.0,'carbohydrate':40.0},
