@@ -133,7 +133,6 @@ def load_data():
             'fat':          np.random.uniform(0, 40, n).round(1),
             'carbohydrate': np.random.uniform(0, 110, n).round(1),
         })
-        return df
     # ── Tambah makanan lokal ──────────────────────────────────────────
     makanan_lokal = pd.DataFrame([
         {'id':2001,'name':'Ayam Geprek',        'calories':550,'proteins':25.0,'fat':30.0,'carbohydrate':40.0},
