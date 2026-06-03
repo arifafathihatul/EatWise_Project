@@ -3,8 +3,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function predictFood(image) {
+  // REVISI: Mengganti 'throw new Error' menjadi return agar tidak mematikan server
   if (!image || !image.buffer) {
-    throw new Error("File gambar tidak ditemukan atau rusak!");
+    console.error("❌ File gambar tidak ditemukan atau rusak!");
+    return {
+      predicted_name: "Gagal: Gambar tidak valid",
+      confidence: 0,
+      nutrition: { calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+      health_warning: "Input gambar tidak valid."
+    };
   }
 
   const aiEndpoint = process.env.AI_SERVER_URL;
