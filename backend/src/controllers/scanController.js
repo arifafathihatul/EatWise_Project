@@ -10,27 +10,22 @@ export const scanFoodDummy = async (req, res) => {
       return res.status(400).json({ success: false, message: "Foto makanan wajib diunggah!" });
     }
 
-    // 1. Panggil AI Service
     const aiResult = await predictFood(imageFile);
     
-    console.log("=== HASIL RESPONS ASLI DARI AI SERVICE ===", JSON.stringify(aiResult, null, 2));
+    // REVISI: Menggunakan ?. agar aman jika aiResult tidak lengkap
+    const foodName = aiResult?.predicted_name || aiResult?.nama_makanan || aiResult?.food_name || "Makanan Tidak Dikenali";
+    const healthWarning = aiResult?.health_warning || aiResult?.risiko || "Aman dikonsumsi dalam batas wajar";
+    const confidence = aiResult?.confidence ?? 0;
 
-    // 2. Ambil data dengan fallback 
-    const foodName = aiResult.predicted_name || aiResult.nama_makanan || aiResult.food_name || "Makanan Tidak Dikenali";
-    const healthWarning = aiResult.health_warning || aiResult.risiko || "Aman dikonsumsi dalam batas wajar";
-    const confidence = aiResult.confidence ?? 0;
-
-    const calories = Number(aiResult.nutrition?.calories || aiResult.kalori || 0);
-    const protein = Number(aiResult.nutrition?.protein || aiResult.protein || 0);
-    const fat = Number(aiResult.nutrition?.fat || aiResult.lemak || 0);
-    const carbs = Number(aiResult.nutrition?.carbohydrate || aiResult.carbs || aiResult.karbohidrat || 0);
+    const calories = Number(aiResult?.nutrition?.calories || aiResult?.kalori || 0);
+    const protein = Number(aiResult?.nutrition?.protein || aiResult?.protein || 0);
+    const fat = Number(aiResult?.nutrition?.fat || aiResult?.lemak || 0);
+    const carbs = Number(aiResult?.nutrition?.carbohydrate || aiResult?.carbs || aiResult?.karbohidrat || 0);
 
     const now = new Date(); 
     const todayDate = new Intl.DateTimeFormat('fr-CA', {
       timeZone: 'Asia/Jakarta',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      year: 'numeric', month: '2-digit', day: '2-digit'
     }).format(now);
 
     const newMeal = await FoodLogModel.create({
@@ -44,7 +39,6 @@ export const scanFoodDummy = async (req, res) => {
       loggedAt: now 
     });
 
-    // Sinkronisasi dengan DailyTrackerModel
     let trackerToday = await DailyTrackerModel.findByDate(userId, todayDate);
 
     if (!trackerToday) {
@@ -57,11 +51,12 @@ export const scanFoodDummy = async (req, res) => {
         totalFat: fat
       });
     } else {
+      // REVISI: Menambahkan nilai ke total yang sudah ada agar tidak tertimpa
       trackerToday = await DailyTrackerModel.updateNutrients(trackerToday.id, {
-        totalCalories: calories,
-        totalProtein: protein,
-        totalCarbs: carbs,
-        totalFat: fat
+        totalCalories: (trackerToday.totalCalories || 0) + calories,
+        totalProtein: (trackerToday.totalProtein || 0) + protein,
+        totalCarbs: (trackerToday.totalCarbs || 0) + carbs,
+        totalFat: (trackerToday.totalFat || 0) + fat
       });
     }
 
