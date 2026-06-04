@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+
+  select:focus,
+  textarea:focus,
+  input:focus,
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="date"],
+  input[type="number"] {
+    font-size: 16px !important;
+  }
+}
+
+
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}
+
+
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+}
