@@ -14,7 +14,15 @@ export const scanFoodDummy = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Foto berhasil diproses',
-      data: aiResult 
+      data: { 
+        foodName: aiResult?.predicted_name || "Makanan Tidak Dikenali",
+        calories: Number(aiResult?.nutrition?.calories || aiResult?.kalori || 0) || 0,
+        protein: Number(aiResult?.nutrition?.protein || aiResult?.protein || 0) || 0,
+        fat: Number(aiResult?.nutrition?.fat || aiResult?.lemak || 0) || 0,
+        carbs: Number(aiResult?.nutrition?.carbohydrate || aiResult?.carbs || aiResult?.karbohidrat || 0) || 0,
+        healthWarning: aiResult?.health_warning,
+        confidence: aiResult?.confidence ?? 0
+      }
     });
 
   } catch (error) {
