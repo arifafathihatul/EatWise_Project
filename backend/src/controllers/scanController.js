@@ -12,7 +12,6 @@ export const scanFoodDummy = async (req, res) => {
 
     const aiResult = await predictFood(imageFile);
     
-    // Pastikan semua nilai adalah angka valid (fallback ke 0 jika null/undefined)
     const foodName = aiResult?.predicted_name || "Makanan Tidak Dikenali";
     const healthWarning = aiResult?.health_warning || "Aman dikonsumsi";
     const confidence = aiResult?.confidence ?? 0;
@@ -47,7 +46,7 @@ export const scanFoodDummy = async (req, res) => {
         totalFat: fat
       });
     } else {
-      // Pastikan tracker lama punya nilai default 0 sebelum ditambah
+    
       trackerToday = await DailyTrackerModel.updateNutrients(trackerToday.id, {
         totalCalories: (Number(trackerToday.totalCalories) || 0) + calories,
         totalProtein: (Number(trackerToday.totalProtein) || 0) + protein,
