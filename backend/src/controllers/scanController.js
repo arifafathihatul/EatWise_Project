@@ -13,7 +13,7 @@ export const scanFoodDummy = async (req, res) => {
     const aiResult = await predictFood(imageFile);
     
     const foodName = aiResult?.predicted_name || "Makanan Tidak Dikenali";
-    const healthWarning = aiResult?.health_warning || "Aman dikonsumsi";
+    const healthWarning = aiResult?.health_warning;
     const confidence = aiResult?.confidence ?? 0;
 
     const calories = Number(aiResult?.nutrition?.calories || aiResult?.kalori || 0) || 0;
@@ -58,7 +58,11 @@ export const scanFoodDummy = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Foto berhasil diproses',
-      data: { newMeal, dailySummary: trackerToday }
+      data: { 
+        newMeal, 
+        dailySummary: trackerToday,
+        confidence: confidence 
+      }
     });
 
   } catch (error) {
