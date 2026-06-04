@@ -1,0 +1,33 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+"scripts": {
+    "start": "node src/server.js",
+    "start:dev": "nodemon src/server.js",
+    "migrate": "node-pg-migrate --database-url-var DATABASE_URL"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.16.1",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "joi": "^18.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "node-pg-migrate": "^8.0.4",
+    "pg": "^8.21.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
