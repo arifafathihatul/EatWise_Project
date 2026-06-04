@@ -88,7 +88,7 @@ Proyek ini menggunakan pendekatan **Microservices** (disarankan oleh advisor), y
 - **Back-End:** Node.js + Express.js
 - **API:** RESTful API
 - **File Upload:** Multer (in-memory processing)
-- **Deployment:** Netlify / Vercel / GitHub Pages
+- **Deployment:** Netlify / Railway / GitHub Pages
 
 ### 🤖 AI / Model (Learning Path: Artificial Intelligence)
 - **Framework:** TensorFlow (Functional API / Model Subclassing)
