@@ -92,8 +92,10 @@ pip install -r requirements.txt
 ```python
 import tensorflow as tf
 
-# Load model dari file .keras
-model = tf.keras.models.load_model("ai-service/models/eatwise_model.keras")
+# Load model dari file .keras tanpa memuat ulang fungsi training/loss
+model = tf.keras.models.load_model(
+    "ai-service/models/eatwise_model.keras", 
+    compile=False  
 
 # Verifikasi model berhasil dimuat
 model.summary()
