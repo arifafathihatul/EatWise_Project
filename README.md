@@ -88,7 +88,7 @@ pip install -r requirements.txt
 | Aset | Keterangan | Tautan |
 |------|-----------|--------|
 | 📦 Dataset Training | Dataset nutrisi & makanan | [EatWise Dataset](https://docs.google.com/spreadsheets/d/1Mdmm3MKGPGgDsdkhJTsKU0Za-L7Msd4BWoE57JDnWFM/edit?usp=sharing) |
-| 🤖 Model (.keras) | Saved model siap produksi | [Download Model](https://drive.google.com/file/d/1MWLlMNcTXMpDT-TCTWm1Xrzz5RL9lVL0/view?usp=drivesdk) |
+| 🤖 Model | Saved model siap produksi | [Download Model](https://drive.google.com/file/d/1MWLlMNcTXMpDT-TCTWm1Xrzz5RL9lVL0/view?usp=drivesdk) |
 | 📁 Repository Lengkap | Source code + model | [EatWise_Project GitHub](https://github.com/arifafathihatul/EatWise_Project.git) |
 
 **Cara memuat model:**
