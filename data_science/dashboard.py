@@ -6,10 +6,10 @@ Capstone Project | Streamlit Interactive Dashboard
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 
 # ──────────────────────────────────────────────
 # KONFIGURASI HALAMAN
@@ -26,10 +26,7 @@ st.set_page_config(
 # ──────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Background */
     .stApp { background-color: #f8fdf4; }
-
-    /* Header */
     .main-header {
         background: linear-gradient(135deg, #2e7d32, #66bb6a);
         padding: 2rem 2.5rem;
@@ -41,8 +38,6 @@ st.markdown("""
     }
     .main-header h1 { font-size: 2.6rem; margin: 0; font-weight: 800; letter-spacing: 1px; }
     .main-header p  { font-size: 1.05rem; opacity: 0.9; margin: 0.5rem 0 0; }
-
-    /* KPI Cards */
     .metric-card {
         background: white;
         border-radius: 14px;
@@ -54,75 +49,37 @@ st.markdown("""
     }
     .metric-card .value { font-size: 2rem; font-weight: 700; color: #2e7d32; }
     .metric-card .label { font-size: 0.85rem; color: #666; margin-top: 0.25rem; }
-
-    /* Risk badges */
-    .badge-safe   { background:#e8f5e9; color:#2e7d32; padding:3px 10px; border-radius:20px; font-size:0.82rem; font-weight:600; }
-    .badge-warn   { background:#fff8e1; color:#f57f17; padding:3px 10px; border-radius:20px; font-size:0.82rem; font-weight:600; }
-    .badge-danger { background:#ffebee; color:#c62828; padding:3px 10px; border-radius:20px; font-size:0.82rem; font-weight:600; }
-
-    /* Section titles */
     .section-title {
         font-size: 1.3rem; font-weight: 700;
         color: #1b5e20; margin: 1.5rem 0 0.75rem;
         border-bottom: 2px solid #a5d6a7;
         padding-bottom: 0.4rem;
     }
-
-    /* Sidebar */
     [data-testid="stSidebar"] { background: #1b5e20 !important; }
     [data-testid="stSidebar"] * { color: white !important; }
-    [data-testid="stSidebar"] .stSelectbox label,
-    [data-testid="stSidebar"] .stSlider label { color: #c8e6c9 !important; font-weight: 600; }
-
-    /* DataTable */
-    .stDataFrame { border-radius: 10px; overflow: hidden; }
-
-    /* Alert boxes */
     .alert-danger { background:#ffebee; border-left:4px solid #e53935; padding:12px 16px; border-radius:8px; margin:10px 0; }
     .alert-safe   { background:#e8f5e9; border-left:4px solid #43a047; padding:12px 16px; border-radius:8px; margin:10px 0; }
-    .alert-warn   { background:#fff8e1; border-left:4px solid #ffb300; padding:12px 16px; border-radius:8px; margin:10px 0; }
 </style>
 """, unsafe_allow_html=True)
 
-
 # ──────────────────────────────────────────────
-# DATA GENERATION  (meniru logika notebook)
+# LOAD DATA (Diperbaiki: Path Absolut & Error Handling)
 # ──────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    # Coba baca file CSV yang dihasilkan notebook; jika tidak ada, buat dummy
-    try:
-        df = pd.read_csv('eatwise_final_dataset.csv')
-    except FileNotFoundError:
-        try:
-            df = pd.read_csv('nutrition.csv', sep=';')
-        except FileNotFoundError:
-            # ── Fallback: dataset representatif ───────────────────────
-            np.random.seed(42)
-            n = 120
-            names_base = [
-                "Nasi Putih","Ayam Bakar","Tempe Goreng","Tahu Goreng","Sayur Lodeh",
-                "Gado-Gado","Soto Ayam","Bakso Sapi","Mie Goreng","Nasi Uduk",
-                "Pecel Lele","Rendang Sapi","Ikan Bakar","Cap Cay","Tumis Kangkung",
-                "Bubur Ayam","Ketoprak","Siomay","Batagor","Martabak Telur",
-                "Pisang Goreng","Onde-Onde","Klepon","Lupis","Risol",
-                "Air Mineral","Teh Manis","Jus Jeruk","Es Kelapa","Kopi Susu",
-                "Salad Buah","Yoghurt","Roti Gandum","Oatmeal","Granola",
-            ]
-            food_names = names_base * (n // len(names_base) + 1)
-            food_names = [f"{n} #{i+1}" if i >= len(names_base) else n
-                          for i, n in enumerate(food_names[:n])]
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    path_csv = os.path.join(base_path, 'eatwise_final_dataset.csv')
+    path_nutrition = os.path.join(base_path, 'nutrition.csv')
 
-            df = pd.DataFrame({
-                'id': range(1, n+1),
-                'name': food_names,
-                'calories':     np.random.randint(30, 750, n).astype(float),
-                'proteins':     np.random.uniform(0.5, 40, n).round(1),
-                'fat':          np.random.uniform(0, 40, n).round(1),
-                'carbohydrate': np.random.uniform(0, 110, n).round(1),
-            })
+    if os.path.exists(path_csv):
+        df = pd.read_csv(path_csv)
+    elif os.path.exists(path_nutrition):
+        df = pd.read_csv(path_nutrition, sep=';')
+    else:
+        st.error(f"Dataset tidak ditemukan. Pastikan file CSV berada di folder yang sama dengan dashboard.py. Path yang dicari: {path_csv}")
+        st.stop()
 
-    # ── Tambah makanan lokal ──────────────────────────────────────────
+    # Preprocessing
     makanan_lokal = pd.DataFrame([
         {'id':2001,'name':'Ayam Geprek',        'calories':550,'proteins':25.0,'fat':30.0,'carbohydrate':40.0},
         {'id':2002,'name':'Nasi Goreng Spesial', 'calories':630,'proteins':15.0,'fat':22.0,'carbohydrate':85.0},
@@ -136,17 +93,14 @@ def load_data():
         {'id':2010,'name':'Tempe Orek',          'calories':180,'proteins':11.0,'fat': 9.0,'carbohydrate':15.0},
     ])
 
-    # Pastikan kolom numerik
     for col in ['calories','proteins','fat','carbohydrate']:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
     df = pd.concat([df, makanan_lokal], ignore_index=True)
     df.drop_duplicates(subset=['name'], keep='last', inplace=True)
     df['name'] = df['name'].str.strip()
-    for col in ['calories','proteins','fat','carbohydrate']:
-        df[col] = df[col].clip(lower=0)
-
-    # ── Health risk label ─────────────────────────────────────────────
+    
+    # Labeling
     def health_risk(row):
         labels = []
         if row['calories'] > 600:       labels.append("Sangat Tinggi Kalori")
@@ -155,33 +109,9 @@ def load_data():
         return ", ".join(labels) if labels else "Normal"
 
     df['health_risk'] = df.apply(health_risk, axis=1)
-
-    # ── Diagnosa penyakit ─────────────────────────────────────────────
-    def diagnosa(row):
-        d = []
-        if row['calories'] > 600:                            d.append("Obesitas Visceral")
-        if row['fat'] > 25:                                  d.append("Hipertensi & Kolesterol")
-        if row['carbohydrate'] > 75:                         d.append("Diabetes Melitus Tipe 2")
-        if row['fat'] > 20 and row['carbohydrate'] > 60:    d.append("NAFLD (Perlemakan Hati)")
-        if row['proteins'] > 35:                             d.append("Hiperurisemia (Asam Urat)")
-        return " & ".join(list(set(d))) if d else "Resiko Rendah"
-
-    df['diagnosis_penyakit'] = df.apply(diagnosa, axis=1)
-    df['action_plan'] = df['diagnosis_penyakit'].apply(
-        lambda x: "⚠️ Cari Alternatif" if x != "Resiko Rendah" else "✅ Aman")
-
-    # ── Simple Calorie-based Clustering (tanpa sklearn) ──────────────
-    cal_33 = df['calories'].quantile(0.33)
-    cal_66 = df['calories'].quantile(0.66)
-    def cluster_label(cal):
-        if cal <= cal_33:   return "🟢 Ringan"
-        elif cal <= cal_66: return "🟡 Sedang"
-        else:               return "🔴 Berat"
-    df['Cluster_Label'] = df['calories'].apply(cluster_label)
-    df['Cluster'] = df['Cluster_Label'].map({"🟢 Ringan": 0, "🟡 Sedang": 1, "🔴 Berat": 2})
-
+    df['diagnosis_penyakit'] = df.apply(lambda row: "Resiko Rendah" if row['health_risk'] == "Normal" else "Perlu Perhatian", axis=1)
+    
     return df
-
 
 # ──────────────────────────────────────────────
 # LOAD DATA

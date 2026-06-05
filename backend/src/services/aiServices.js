@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function predictFood(image) {
-  // REVISI: Mengganti 'throw new Error' menjadi return agar tidak mematikan server
+  
   if (!image || !image.buffer) {
     console.error("❌ File gambar tidak ditemukan atau rusak!");
     return {

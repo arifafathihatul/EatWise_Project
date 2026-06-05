@@ -5,11 +5,11 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// GUNAKAN connectionString, JANGAN pecah menjadi host/user/password
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // WAJIB untuk Supabase agar koneksi tidak ditolak
+    rejectUnauthorized: false 
   }
 });
 
