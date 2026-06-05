@@ -12,7 +12,7 @@
 
 Masalah utama yang diangkat adalah kebiasaan mahasiswa/anak kos yang memilih makanan berdasarkan harga dan kepraktisan tanpa mempertimbangkan nilai gizi, yang berpotensi menimbulkan risiko kesehatan akibat pola makan tidak seimbang.
 
-Alur kerja EatWise dimulai dari pengguna memasukkan data personal (berat badan, tinggi badan, usia, dan tingkat aktivitas) untuk menentukan target nutrisi harian berbasis BMR. Saat pemindaian makanan menggunakan kamera, sistem melakukan image classification untuk mengidentifikasi jenis makanan dan mengestimasi kandungan nutrisinya. Selanjutnya sistem menganalisis pola konsumsi pengguna dan menghasilkan insight berupa peringatan konsumsi berlebih serta potensi risiko kesehatan jangka panjang.
+Alur kerja EatWise dimulai dari pengguna memasukkan data personal (berat badan, tinggi badan, usia) untuk menentukan target nutrisi harian berbasis BMR. Saat pemindaian makanan menggunakan kamera, sistem melakukan image classification untuk mengidentifikasi jenis makanan dan mengestimasi kandungan nutrisinya. Selanjutnya sistem menganalisis pola konsumsi pengguna dan menghasilkan insight berupa peringatan konsumsi berlebih serta potensi risiko kesehatan jangka panjang.
 
 ---
 
