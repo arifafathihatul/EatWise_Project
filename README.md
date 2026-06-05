@@ -56,9 +56,6 @@ python -m venv venv
 # Aktivasi (Windows)
 venv\Scripts\activate
 
-# Aktivasi (Linux/macOS)
-source venv/bin/activate
-
 # Install dependensi
 pip install -r requirements.txt
 ```
