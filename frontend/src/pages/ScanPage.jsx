@@ -24,8 +24,7 @@ export default function ScanPage() {
     protein: 0,
     lemak: 0,
     karbo: 0,
-    risiko: "-",
-    loggedAt: null
+    risiko: "-"
   });
   
   const videoRef = useRef(null);
@@ -79,35 +78,18 @@ export default function ScanPage() {
     }
   };
 
-  
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-
-      const allowedExtensions = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif'];
-      
-      const fileType = file.type ? file.type.toLowerCase() : '';
-      const fileExtension = file.name ? file.name.split('.').pop().toLowerCase() : '';
-
-      const isFormatValid = allowedExtensions.includes(fileType) || ['jpg', 'jpeg', 'png', 'heic', 'heif'].includes(fileExtension);
-      
-      if (!isFormatValid) {
-        setError("Format file tidak didukung! Silakan upload gambar dengan format JPG, JPEG, PNG, atau HEIC (iPhone) saja, ya.");
-        setCapturedImage(null);
-        setShowModal(true); 
-        if (e.target) e.target.value = "";
-        return; 
-      }
-
-      
-      const objectUrl = URL.createObjectURL(file);
-      setCapturedImage(objectUrl); 
- 
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-
-      sendToAiBackend(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCapturedImage(reader.result); 
+        if (videoRef.current && videoRef.current.srcObject) {
+          videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        }
+        sendToAiBackend(file);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -120,35 +102,35 @@ export default function ScanPage() {
       const res = await scanFood(fileToUpload);
 
       if (res && res.success) {
-        const confidenceScore = res.confidence ? Number(res.confidence.replace('%', '')) : 0;
-
-        if (confidenceScore < 20) {
-          setError("Gambar tidak dikenali sebagai makanan! Pastikan posisi foto makanan terpusat dan pencahayaannya cukup, ya.");
-          setCapturedImage(null); 
-          setLoading(false);
-          return; 
+        const rawAiData = res.data || {};
+        let rawConfidence = res.confidence !== undefined ? res.confidence : rawAiData.confidence;
+        let confidenceScore = Number(rawConfidence) || 0;
+        if (confidenceScore > 0 && confidenceScore <= 1) {
+          confidenceScore = confidenceScore * 100;
         }
-
-        const foodData = res.data || {};
-        const newMealData = foodData.newMeal || {};
+        confidenceScore = Math.round(confidenceScore);
 
         const hasilRisikoAi = 
-          newMealData.healthWarning || 
-          foodData.healthWarning || 
-          res.healthWarning || 
-          newMealData.risiko ||
-          foodData.risiko ||
-          "Aman";
+          rawAiData.healthWarning || 
+          rawAiData.health_warning || 
+          rawAiData.risiko || 
+          res.healthWarning ||
+          "Aman"; 
+
+        const namaMakananAi = rawAiData.foodName || rawAiData.label || "Makanan Tidak Dikenali";
+        const kaloriAi = Number(rawAiData.calories) || Number(rawAiData.kalori) || 0;
+        const proteinAi = Number(rawAiData.protein) || 0;
+        const lemakAi = Number(rawAiData.fat) || Number(rawAiData.lemak) || 0;
+        const karboAi = Number(rawAiData.carbs) || Number(rawAiData.carbohydrate) || 0;
 
         setAiResult({
-          namaMakanan: newMealData.foodName || foodData.foodName || "Makanan Tidak Dikenali",
+          namaMakanan: namaMakananAi,
           confidence: confidenceScore,
-          kalori: Number(newMealData.calories || foodData.calories) || 0,
-          protein: Number(newMealData.protein || foodData.protein) || 0,
-          lemak: Number(newMealData.fat || foodData.fat) || 0,
-          karbo: Number(newMealData.carbs || foodData.carbs) || 0, 
-          risiko: hasilRisikoAi,
-          loggedAt: newMealData.loggedAt || newMealData.createdAt || null
+          kalori: kaloriAi,
+          protein: proteinAi,
+          lemak: lemakAi,
+          karbo: karboAi, 
+          risiko: hasilRisikoAi
         });
       }
     } catch (err) {
@@ -159,59 +141,52 @@ export default function ScanPage() {
     }
   };
 
-  const handleRetake = () => {
-    if (capturedImage && capturedImage.startsWith('blob:')) {
-      URL.revokeObjectURL(capturedImage);
-    }
-
-    setCapturedImage(null);
-    setShowModal(false);
-    setAiResult({
-      namaMakanan: "-", confidence: 0, kalori: 0, protein: 0, lemak: 0, karbo: 0, risiko: "-", loggedAt: null
-    });
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(s => { 
-        setStream(s); 
-        if (videoRef.current) videoRef.current.srcObject = s; 
-      });
-  };
-
   const handleSaveToTracker = async () => {
     try {
       setLoading(true);
       localStorage.removeItem('foodCapturedList');
 
-      const localDate = new Date().toLocaleDateString('en-CA'); 
-      const rawDate = aiResult.loggedAt ? new Date(aiResult.loggedAt) : new Date();
-      
-      const waktuWIB = rawDate.toLocaleTimeString('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) + " WIB";
-
-      const transitMealData = {
-        id: Date.now(), 
+      const saveResponse = await apiClient.post('/api/save', {
         foodName: aiResult.namaMakanan,
-        waktu: waktuWIB, 
-        loggedAt: rawDate.toISOString(), 
-        date: localDate, 
-        confidence: `${aiResult.confidence}%`,
         calories: aiResult.kalori,
         protein: aiResult.protein,
         fat: aiResult.lemak,
         carbs: aiResult.karbo,
-        healthWarning: aiResult.risiko,
-        risiko: aiResult.risiko
-      };
+        healthWarning: aiResult.risiko
+      });
 
-      setShowModal(false);
-    
-      navigate('/tracker', { state: { newScannedMeal: transitMealData }, replace: true }); 
-      
+      if (saveResponse && saveResponse.data && saveResponse.data.success) {
+        const localDate = new Date().toLocaleDateString('en-CA'); 
+        const now = new Date();
+        const waktuWIB = now.toLocaleTimeString('id-ID', {
+          timeZone: 'Asia/Jakarta',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) + " WIB";
+
+        const transitMealData = {
+          id: saveResponse.data.data?.newMeal?.id || Date.now(), 
+          nama: aiResult.namaMakanan, 
+          waktu: waktuWIB, 
+          loggedAt: now.toISOString(), 
+          date: localDate, 
+          confidence: `${aiResult.confidence}%`,
+          kalori: aiResult.kalori, 
+          protein: aiResult.protein, 
+          lemak: aiResult.lemak, 
+          karbo: aiResult.karbo, 
+          risiko: aiResult.risiko 
+        };
+
+        setShowModal(false);
+        navigate('/tracker', { state: { newScannedMeal: transitMealData }, replace: true }); 
+      } else {
+        throw new Error("Gagal menyimpan data dari respons server.");
+      }
+
     } catch (error) {
-      console.error("Gagal memproses perpindahan halaman:", error);
-      setToastMessage("Gagal memproses perpindahan halaman.");
+      console.error("Gagal memproses penyimpanan ke database:", error);
+      setToastMessage(error.response?.data?.message || "Gagal menyimpan data ke Daily Tracker.");
       setShowErrorToast(true);
       setTimeout(() => setShowErrorToast(false), 3000);
     } finally {
@@ -219,16 +194,30 @@ export default function ScanPage() {
     }
   };
 
+  const handleRetake = () => {
+    setCapturedImage(null);
+    setShowModal(false);
+    setError("");
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(s => { 
+        setStream(s); 
+        if (videoRef.current) videoRef.current.srcObject = s; 
+      })
+      .catch(e => console.error("Kamera gagal dimuat:", e));
+  };
+
+  const isAman = aiResult.risiko.toLowerCase().includes('aman') || aiResult.risiko.toLowerCase().includes('seimbang');
+
   return (
     <div className="font-sans min-h-screen bg-slate-50 flex flex-col md:flex-row relative w-full overflow-x-hidden text-left">
       <canvas ref={canvasRef} className="hidden" />
 
       {showErrorToast && (
-        <div className="fixed bottom-5 right-5 z-[200] bg-emerald-50 border border-emerald-200 text-[#2A6B3F] rounded-xl p-4 shadow-xl flex items-center gap-3 animate-fadeIn w-80 text-xs font-bold text-left">
-          <AlertCircle className="w-5 h-5 text-[#2A6B3F] shrink-0" />
+        <div className="fixed bottom-5 right-5 z-[200] bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-4 shadow-xl flex items-center gap-3 animate-fadeIn w-80 text-xs font-bold text-left">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
           <div>
-            <p className="font-black text-[#2A6B3F]">Gagal Menyimpan</p>
-            <p className="font-medium text-[#2A6B3F]/90 mt-0.5 leading-relaxed">{toastMessage}</p>
+            <p className="font-black text-rose-900">Gagal Menyimpan</p>
+            <p className="font-medium text-rose-700/90 mt-0.5 leading-relaxed">{toastMessage}</p>
           </div>
         </div>
       )}
@@ -244,7 +233,6 @@ export default function ScanPage() {
 
       <main className="flex-grow h-full overflow-y-auto p-5 sm:p-6 md:p-8 md:pl-80 pt-24 md:pt-10 bg-slate-50 flex justify-center min-w-0 text-left">
         <div className="w-full max-w-4xl mx-auto text-left space-y-6 pb-12">
-          
           <div>
             <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Scan Makanan</h1>
             <p className="text-xs md:text-sm text-slate-400 font-medium mt-0.5">Scan atau upload makanannya di sini, ya!</p>
@@ -289,14 +277,12 @@ export default function ScanPage() {
               </div>
             </div>
           </div>
-
         </div>
       </main>
 
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
           <div className="relative bg-white w-full max-w-md rounded-[24px] overflow-hidden shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto text-left">
-            
             <div className="flex justify-between items-center border-b pb-3">
               <h2 className="text-sm font-black text-slate-800 tracking-tight">Hasil Scan Makanan</h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-full cursor-pointer">
@@ -310,24 +296,32 @@ export default function ScanPage() {
                 <p className="text-xs font-bold text-slate-500">AI EatWise sedang memproses data nutrisi...</p>
               </div>
             ) : error ? (
-              <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-4 shadow-inner">
-                <div className="text-[#2A6B3F] font-bold text-xs flex items-center justify-center gap-2.5 leading-relaxed text-left p-2">
-                  <AlertCircle className="w-6 h-6 shrink-0 text-[#2A6B3F]" /> 
-                  <span>{error}</span>
+              <div className="p-6 text-center space-y-4">
+                <div className="text-rose-500 font-bold text-xs flex items-center justify-center gap-1.5">
+                  <AlertCircle className="w-5 h-5 shrink-0" /> {error}
                 </div>
-                <button 
-                  type="button" 
-                  onClick={handleRetake} 
-                  className="bg-[#2A6B3F] text-white hover:bg-[#1E5128] text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer shadow transition-all active:scale-95"
-                >
-                  Coba Ulang
+                <button type="button" onClick={handleRetake} className="bg-slate-100 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl">Coba Ulang</button>
+              </div>
+            ) : aiResult.confidence < 25 ? (
+              <div className="py-6 text-center flex flex-col items-center space-y-4 animate-fadeIn">
+                <div className="w-16 h-16 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center shadow-inner">
+                  <AlertCircle className="w-8 h-8 text-emerald-600" />
+                </div>
+                <div className="space-y-1.5 px-2">
+                  <h3 className="text-sm font-black text-emerald-900 uppercase tracking-wider">Analisis Belum Maksimal</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
+                    AI kami belum bisa mengenali makanan ini dengan pasti. Silakan coba pilih foto lain yang lebih jelas agar hasil analisis lebih akurat.
+                  </p>
+                </div>
+                <button type="button" onClick={handleRetake} className="w-full bg-[#2A6B3F] hover:bg-[#1E5128] text-white font-bold py-3 rounded-xl shadow text-xs uppercase tracking-wider transition-all active:scale-95">
+                  Pilih Foto Lain
                 </button>
               </div>
             ) : (
               <>
                 <div className="flex flex-col items-center text-center space-y-3">
                   <div className="w-48 h-48 aspect-square rounded-xl overflow-hidden shadow-md border border-slate-100 mx-auto">
-                    {capturedImage && <img src={capturedImage} alt="Food Result" className="w-full h-full object-cover" />}
+                    <img src={capturedImage} alt="Food Result" className="w-full h-full object-cover" />
                   </div>
                   <h3 className="text-base font-black text-slate-800 tracking-tight capitalize">{aiResult.namaMakanan}</h3>
                   <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#E6F3EA] text-[#2A6B3F] rounded-full text-[10px] font-bold">
@@ -345,21 +339,18 @@ export default function ScanPage() {
                   <div className="flex justify-between"><span>Karbohidrat</span><span className="text-slate-800 font-black">{aiResult.karbo} g</span></div>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl p-4 bg-white text-[11px] font-bold space-y-1">
-                  <p className="text-slate-400 text-[9px] uppercase tracking-wide flex items-center gap-1">
-                    Potensi Risiko Penyakit <AlertCircle className="w-3 h-3 text-[#2A6B3F]" />
+                <div className={`border rounded-xl p-4 text-[11px] font-bold space-y-1 ${isAman ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                  <p className={`text-[9px] uppercase tracking-wide flex items-center gap-1 ${isAman ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    Peringatan Kesehatan <AlertCircle className="w-3 h-3" />
                   </p>
-                  <p className="text-emerald-800 leading-normal break-words font-medium">
+                  <p className={`leading-normal break-words font-medium ${isAman ? 'text-emerald-800' : 'text-rose-700'}`}>
                     {aiResult.risiko}
                   </p>
                 </div>
 
                 <p className="text-[9px] text-slate-400 font-medium italic text-center leading-tight pt-0.5">*Hasil analisis visual AI EatWise ini adalah estimasi, bukan rekam medis atau diagnosis resmi dokter.</p>
 
-                <button   
-                  onClick={handleSaveToTracker}  
-                  className="w-full bg-[#2A6B3F] hover:bg-[#1E5128] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer text-xs uppercase tracking-wider"
-                >
+                <button onClick={handleSaveToTracker} className="w-full bg-[#2A6B3F] hover:bg-[#1E5128] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow transition-all active:scale-95 cursor-pointer text-xs uppercase tracking-wider">
                   Simpan Ke Daily Tracker
                 </button>
               </>

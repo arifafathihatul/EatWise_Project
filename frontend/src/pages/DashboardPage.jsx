@@ -16,10 +16,10 @@ export default function DashboardPage() {
   const [currentFoods, setCurrentFoods] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [nutritionSummary, setNutritionSummary] = useState({
-    kalori: 0,
+    calories: 0,
     protein: 0,
-    lemak: 0,
-    karbo: 0
+    fat: 0,
+    carbs: 0
   });
 
   const [userBmr, setUserBmr] = useState(0); 
@@ -33,12 +33,6 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/'); 
-      return; 
-    }
-
     const fetchRealDatabaseData = async () => {
       try {
         setError(null);
@@ -78,10 +72,10 @@ export default function DashboardPage() {
 
         const sqlSummary = trackerData.summary || {};
         setNutritionSummary({
-          kalori: Number(Number(sqlSummary.totalCalories || 0).toFixed(0)),
+          calories: Number(Number(sqlSummary.totalCalories || 0).toFixed(0)),
           protein: Number(Number(sqlSummary.totalProtein || 0).toFixed(1)),
-          lemak: Number(Number(sqlSummary.totalFat || 0).toFixed(1)),
-          karbo: Number(Number(sqlSummary.totalCarbs || 0).toFixed(1))
+          fat: Number(Number(sqlSummary.totalFat || 0).toFixed(1)),
+          carbs: Number(Number(sqlSummary.totalCarbs || 0).toFixed(1))
         });
 
         const sqlLatestMeal = trackerData.latestMeal;
@@ -122,9 +116,8 @@ export default function DashboardPage() {
             calories: Number(sqlLatestMeal.calories) || 0,
             protein: Number(sqlLatestMeal.protein) || 0,
             fat: Number(sqlLatestMeal.fat) || 0,
-            carbohydrate: Number(sqlLatestMeal.carbs) || 0, 
-            wawasan: sqlLatestMeal.healthWarning || "Aman dikonsumsi.",
-            risiko: sqlLatestMeal.healthWarning || "Aman dikonsumsi." 
+            carbs: Number(sqlLatestMeal.carbs) || 0, 
+            healthWarning: sqlLatestMeal.healthWarning || "Aman dikonsumsi."
           };
 
           setCurrentFoods([mappedLatestMeal]);
@@ -142,20 +135,20 @@ export default function DashboardPage() {
     };
 
     fetchRealDatabaseData();
-  }, [navigate]);
+  }, []);
 
   const makananTerakhir = currentFoods.length > 0 ? currentFoods[0] : null;
 
   let healthScore = 100;
   let healthStatus = "Kondisi Sangat Baik!";
 
-  if (nutritionSummary.kalori === 0) {
+  if (nutritionSummary.calories === 0) {
     healthScore = 0;
     healthStatus = "Belum Ada Data Asupan";
-  } else if (nutritionSummary.lemak > 40) {
+  } else if (nutritionSummary.fat > 40) {
     healthScore -= 30;
     healthStatus = "Peringatan Kolesterol!";
-  } else if (nutritionSummary.kalori > userBmr) { 
+  } else if (nutritionSummary.calories > userBmr) { 
     healthScore -= 20;
     healthStatus = "Surplus Kalori!";
   } else if (nutritionSummary.protein < 25) {
@@ -163,18 +156,18 @@ export default function DashboardPage() {
     healthStatus = "Kurang Protein!";
   }
 
-  const bmrPercentage = userBmr > 0 ? Math.min(Math.round((nutritionSummary.kalori / userBmr) * 100), 100) : 0;
-  const sisaKaloriBmr = userBmr > 0 ? userBmr - nutritionSummary.kalori : 0;
+  const bmrPercentage = userBmr > 0 ? Math.min(Math.round((nutritionSummary.calories / userBmr) * 100), 100) : 0;
+  const sisaKaloriBmr = userBmr > 0 ? userBmr - nutritionSummary.calories : 0;
 
   let kaloriAsistenMessage = "Belum ada catatan kesehatan aktif untuk hari ini.";
-  if (nutritionSummary.kalori === 0) {
+  if (nutritionSummary.calories === 0) {
     kaloriAsistenMessage = "Belum ada makanan yang dicatat. Silakan scan menu pertamamu hari ini.";
-  } else if (nutritionSummary.lemak > 40) {
-    kaloriAsistenMessage = `Batas lemak harian terlampaui (${nutritionSummary.lemak}g). Sebaiknya kurangi makanan berminyak atau gorengan.`;
-  } else if (nutritionSummary.kalori <= userBmr) {
-    kaloriAsistenMessage = `Pola makanmu sudah baik dan kalori harianmu baru terpenilen ${bmrPercentage}%. Tetap jaga porsi makanmu.`;
+  } else if (nutritionSummary.fat > 40) {
+    kaloriAsistenMessage = `Batas lemak harian terlampaui (${nutritionSummary.fat}g). Sebaiknya kurangi makanan berminyak atau gorengan.`;
+  } else if (nutritionSummary.calories <= userBmr) {
+    kaloriAsistenMessage = `Pola makanmu sudah baik dan kalori harianmu baru terpenuhi ${bmrPercentage}%. Tetap jaga porsi makanmu.`;
   } else {
-    const surplus = nutritionSummary.kalori - userBmr;
+    const surplus = nutritionSummary.calories - userBmr;
     kaloriAsistenMessage = `Kelebihan kalori sebanyak +${surplus} kcal dari kebutuhan dasar BMR. Batasi asupan makanan berat malam ini.`;
   }
 
@@ -209,12 +202,12 @@ export default function DashboardPage() {
     );
   }
 
-  const teksRisiko = makananTerakhir && makananTerakhir.risiko ? makananTerakhir.risiko.toLowerCase() : "";
-  const isAman = teksRisiko.includes("aman") || 
-                  teksRisiko.includes("seimbang") || 
-                  teksRisiko.includes("tercukupi") || 
-                  teksRisiko.includes("tidak ada") || 
-                  teksRisiko === "";
+  const textRisiko = makananTerakhir && makananTerakhir.healthWarning ? makananTerakhir.healthWarning.toLowerCase() : "";
+  const isAman = textRisiko.includes("aman") || 
+                  textRisiko.includes("seimbang") || 
+                  textRisiko.includes("tercukupi") || 
+                  textRisiko.includes("tidak ada") || 
+                  textRisiko === "";
 
   const isPerhatian = !isAman;
 
@@ -234,7 +227,7 @@ export default function DashboardPage() {
 
       <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} stream={null} />
 
-      <main className="flex-grow h-full overflow-y-auto p-5 sm:p-6 md:p-8 md:pl-80 pt-24 md:pt-10 bg-slate-50 flex justify-center min-w-0 text-left">
+      <main className="flex-grow h-full overflow-y-auto p-5 sm:p-6 md:p-8 md:pl-80 pt-24 md:pt-10 bg-slate-50 flex justify-center min-w-0">
         <div className="w-full max-w-5xl space-y-6 mx-auto text-left">
           
           <div className="flex items-center gap-4 text-left justify-start">
@@ -253,10 +246,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-emerald-50 rounded-[24px] flex flex-col lg:flex-row justify-between items-center border border-emerald-200 shadow-sm w-full overflow-hidden text-left">
-            <div className="text-left space-y-2.5 w-full p-6 md:p-8">
+          <div className="bg-emerald-50 rounded-[24px] flex flex-col lg:flex-row justify-between items-center border border-emerald-200 shadow-sm w-full overflow-hidden">
+            <div className="text-center lg:text-left space-y-2.5 w-full p-6 md:p-8">
               <h2 className="text-xl font-black text-slate-900 tracking-tight">Scan MakananMU</h2>
-              <p className="text-xs md:text-sm text-slate-500 max-w-md font-medium leading-relaxed text-left">
+              <p className="text-xs md:text-sm text-slate-500 max-w-md font-medium leading-relaxed">
                 Dapatkan informasi nutrisi secara lengkap dari makanan Anda dalam hitungan detik.
               </p>
               <button onClick={() => navigate('/scan')} className="bg-[#2A6B3F] hover:bg-[#1E5128] text-white text-xs font-bold px-5 py-2.5 rounded-xl inline-flex items-center gap-2 shadow shadow-green-200/30 transition-all cursor-pointer mt-1">
@@ -268,11 +261,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm w-full text-left">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-center text-left">
+          <div className="bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-center">
               
-              <div className="lg:col-span-1 flex flex-col justify-between gap-4 h-full text-left">
-                <div className="flex items-center gap-4 w-full text-left">
+              <div className="lg:col-span-1 flex flex-col justify-between gap-4 h-full">
+                <div className="flex items-center gap-4 w-full">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0"><Trophy className="w-6 h-6" /></div>
                   <div className="text-left">
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Skor Kesehatan Harian</p>
@@ -281,7 +274,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 
-                <div className="w-full border-t border-slate-100 pt-2 text-left">
+                <div className="w-full border-t border-slate-100 pt-2">
                   <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1">
                     <span>Energi Tubuh (BMR)</span>
                     <span>{bmrPercentage}%</span>
@@ -296,22 +289,22 @@ export default function DashboardPage() {
               </div>
 
               <div className="lg:col-span-2 border-t lg:border-t-0 lg:border-l border-slate-100 pt-5 lg:pt-0 lg:pl-8 flex flex-col justify-center h-full text-left">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2.5 text-left">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2.5">
                   {challenges && challenges.length > 0 ? "Tantangan Mahasiswa Sehat" : "Catatan Kesehatan Hari Ini"}
                 </p>
                 
-                <div className="w-full flex items-center text-left">
+                <div className="w-full flex items-center">
                   {challenges && challenges.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
                       {challenges.map(ch => (
                         <div key={ch.id} onClick={() => toggleChallenge(ch.id)} className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${ch.completed ? 'bg-emerald-50/60 border-emerald-200 text-emerald-800 font-bold shadow-inner' : 'bg-slate-50 border-slate-150 text-slate-600 hover:border-slate-300'}`}>
                           <CheckCircle2 className={`w-4 h-4 shrink-0 ${ch.completed ? 'text-emerald-600' : 'text-slate-300'}`} />
-                          <span className="text-xs leading-tight font-medium text-left">{ch.text || ch.nama_tantangan}</span>
+                          <span className="text-xs leading-tight font-medium">{ch.text || ch.nama_tantangan}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs font-semibold text-slate-500 leading-relaxed italic bg-slate-50 border border-slate-150 p-3.5 rounded-xl w-full flex items-center text-left">
+                    <p className="text-xs font-semibold text-slate-500 leading-relaxed italic bg-slate-50 border border-slate-150 p-3.5 rounded-xl w-full flex items-center">
                       {kaloriAsistenMessage}
                     </p>
                   )}
@@ -323,35 +316,35 @@ export default function DashboardPage() {
 
           <div className="w-full text-left space-y-3">
             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Ringkasan Hari ini</h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full text-left">
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 mb-2"><Flame className="w-4 h-4" /></div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kalori</span>
-                <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.kalori} kcal</span>
+                <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.calories} kcal</span>
               </div>
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 mb-2"><Beef className="w-4 h-4" /></div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Protein</span>
                 <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.protein} g</span>
               </div>
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center text-yellow-500 mb-2"><Droplet className="w-4 h-4" /></div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lemak</span>
-                <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.lemak} g</span>
+                <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.fat} g</span>
               </div>
-              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm flex flex-col items-center">
                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-2"><Egg className="w-4 h-4" /></div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Karbohidrat</span>
-                <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.karbo} g</span>
+                <span className="text-base font-black text-slate-800 mt-0.5">{nutritionSummary.carbs} g</span>
               </div>
             </div>
             
-            <div className="bg-white text-[#2A6B3F] text-[11px] font-bold px-4 py-1.5 rounded-xl shadow-sm border border-[#D5ECD9] inline-block text-left">
+            <div className="bg-white text-[#2A6B3F] text-[11px] font-bold px-4 py-1.5 rounded-xl shadow-sm border border-[#D5ECD9] inline-block">
               BMR kamu: {userBmr} kcal / <span className="underline">
-                {nutritionSummary.kalori} kcal {' '}
-                {nutritionSummary.kalori === 0 
+                {nutritionSummary.calories} kcal {' '}
+                {nutritionSummary.calories === 0 
                   ? '(belum terpenuhi)' 
-                  : nutritionSummary.kalori > userBmr 
+                  : nutritionSummary.calories > userBmr 
                     ? '(melebihi)' 
                     : '(tercukupi)'}
               </span>
@@ -361,7 +354,7 @@ export default function DashboardPage() {
           <div className="pb-6 w-full text-left space-y-3">
             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Makanan Terakhir</h2>
             {makananTerakhir ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col gap-4 w-full hover:border-[#2A6B3F] transition-all text-left">
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm flex flex-col gap-4 w-full hover:border-[#2A6B3F] transition-all">
                 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full pb-1 text-left">
                   <div className="text-left">
@@ -369,22 +362,22 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-slate-400 font-bold mt-0.5 text-left">{makananTerakhir.time} • Date: {makananTerakhir.date}</p>
                   </div>
                   
-                  <div className="grid grid-cols-4 gap-6 sm:gap-8 text-left w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
-                    <div className="text-left">
+                  <div className="grid grid-cols-4 gap-6 sm:gap-8 text-left sm:text-center w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
+                    <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kalori</p>
                       <p className="text-sm font-black text-slate-900 mt-0.5">{makananTerakhir.calories} kcal</p>
                     </div>
-                    <div className="text-left">
+                    <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Protein</p>
                       <p className="text-sm font-black text-slate-900 mt-0.5">{makananTerakhir.protein}g</p>
                     </div>
-                    <div className="text-left">
+                    <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lemak</p>
                       <p className="text-sm font-black text-slate-900 mt-0.5">{makananTerakhir.fat}g</p>
                     </div>
-                    <div className="text-left">
+                    <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Karbo</p>
-                      <p className="text-sm font-black text-slate-900 mt-0.5">{makananTerakhir.carbohydrate}g</p>
+                      <p className="text-sm font-black text-slate-900 mt-0.5">{makananTerakhir.carbs}g</p>
                     </div>
                   </div>
                 </div>
@@ -395,7 +388,7 @@ export default function DashboardPage() {
                     <p className="leading-tight text-left font-medium">
                       <span className="font-bold text-slate-700">Peringatan Kesehatan:</span>{' '}
                       <span className={`font-black ${alertTextColor}`}>
-                        {makananTerakhir.risiko}
+                        {makananTerakhir.healthWarning}
                       </span>
                     </p>
                   </div>
